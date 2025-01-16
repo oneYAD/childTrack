@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Shield, Brain, Eye, ChevronRight } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { trackEvent } from '../utils/analytics';
 
 const LandingPage = () => {
   const [email, setEmail] = useState('');
@@ -9,31 +10,59 @@ const LandingPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Track page view
+    trackEvent('page_view', {
+      page_title: 'Landing Page',
+      page_location: window.location.href,
+    });
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      console.log('Attempting to save email:', email);
-      console.log('Using Firestore instance:', db);
+      // Track form submission attempt
+      trackEvent('form_start', {
+        form_name: 'waitlist'
+      });
+
       // Add email to Firestore
-      const docRef = await addDoc(collection(db, 'waitlist'), {
+      await addDoc(collection(db, 'waitlist'), {
         email,
         timestamp: serverTimestamp(),
         userAgent: navigator.userAgent,
         referrer: document.referrer
       });
-      
-      console.log('Document written with ID:', docRef.id);
+
+      // Track successful submission
+      trackEvent('form_submit_success', {
+        form_name: 'waitlist'
+      });
+
       setSubmitted(true);
       setEmail('');
     } catch (err) {
-      console.error('Detailed error:', err);
-      setError(`Error: ${err.message}`); // More detailed error message
+      console.error('Error saving email:', err);
+      setError('Something went wrong. Please try again.');
+      
+      // Track submission error
+      trackEvent('form_submit_error', {
+        form_name: 'waitlist',
+        error_message: err.message
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Track feature card clicks
+  const handleFeatureClick = (featureTitle) => {
+    trackEvent('feature_click', {
+      feature_name: featureTitle
+    });
   };
 
   const features = [
@@ -110,19 +139,23 @@ const LandingPage = () => {
         </div>
       </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {features.map((feature, index) => (
-            <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-4 mb-4">
-                {feature.icon}
-                <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
-              </div>
-              <p className="text-gray-600">{feature.description}</p>
+        {/* Features Grid with click tracking */}
+      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        {features.map((feature, index) => (
+          <div 
+            key={index} 
+            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleFeatureClick(feature.title)}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              {feature.icon}
+              <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
             </div>
-          ))}
-        </div>
-
+            <p className="text-gray-600">{feature.description}</p>
+          </div>
+        ))}
+      </div>
+      
         {/* Social Proof */}
         <div className="text-center mt-16">
           <p className="text-gray-500 mb-4">Compatible with leading daycare camera systems</p>
