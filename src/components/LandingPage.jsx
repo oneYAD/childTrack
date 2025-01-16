@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Bell, Shield, Brain, Eye, ChevronRight } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
 
 const LandingPage = () => {
   const [email, setEmail] = useState('');
@@ -50,9 +49,9 @@ const LandingPage = () => {
           {/* Waitlist Form */}
           <div className="max-w-md mx-auto">
             {submitted ? (
-              <Alert className="bg-green-50 border-green-200 text-green-800 p-4">
+              <div className="bg-green-50 border-green-200 text-green-800 p-4 rounded-lg">
                 Thanks for joining! We'll notify you when we launch.
-              </Alert>
+              </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <input
