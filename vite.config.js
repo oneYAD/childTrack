@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/childcare-ai-landing/', // Replace with your repo name
+  base: './', // This is the key change
 })
