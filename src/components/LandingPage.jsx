@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
 import { Bell, Shield, Brain, Eye, ChevronRight } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const LandingPage = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setEmail('');
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Attempting to save email:', email);
+      console.log('Using Firestore instance:', db);
+      // Add email to Firestore
+      const docRef = await addDoc(collection(db, 'waitlist'), {
+        email,
+        timestamp: serverTimestamp(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer
+      });
+      
+      console.log('Document written with ID:', docRef.id);
+      setSubmitted(true);
+      setEmail('');
+    } catch (err) {
+      console.error('Detailed error:', err);
+      setError(`Error: ${err.message}`); // More detailed error message
+    } finally {
+      setLoading(false);
+    }
   };
 
   const features = [
@@ -48,12 +73,13 @@ const LandingPage = () => {
           
           {/* Waitlist Form */}
           <div className="max-w-md mx-auto">
-            {submitted ? (
-              <div className="bg-green-50 border-green-200 text-green-800 p-4 rounded-lg">
-                Thanks for joining! We'll notify you when we launch.
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex gap-2">
+          {submitted ? (
+            <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg">
+              Thanks for joining! We'll notify you when we launch.
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+              <div className="flex gap-2">
                 <input
                   type="email"
                   value={email}
@@ -61,18 +87,28 @@ const LandingPage = () => {
                   placeholder="Enter your email"
                   className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
+                  disabled={loading}
                 />
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  className={`bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={loading}
                 >
-                  Join Waitlist
+                  {loading ? 'Joining...' : 'Join Waitlist'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
-              </form>
-            )}
-          </div>
+              </div>
+              {error && (
+                <div className="text-red-600 text-sm mt-1">
+                  {error}
+                </div>
+              )}
+            </form>
+          )}
         </div>
+      </div>
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
